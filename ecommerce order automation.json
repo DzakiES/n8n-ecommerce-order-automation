@@ -1,0 +1,1027 @@
+{
+  "name": "ecommerce order automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-order",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        -80
+      ],
+      "id": "6e75b8d7-8c27-4fae-81e3-526b9202ea48",
+      "name": "Webhook",
+      "webhookId": "2627b1c3-a12f-4cea-a48f-4c735c1ebbd3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\n\n// Classification logic\nlet category;\nif (body.quantity < 100) {\n  category = \"STANDARD\";\n} else if (body.quantity <= 500) {\n  category = \"BULK\";\n} else {\n  category = \"VIP\";\n}\n\nreturn [{\n  json: {\n    order_id: body.order_id,\n    customer_name: body.customer_name,\n    customer_email: body.customer_email,\n    product: body.product,\n    quantity: body.quantity,\n    price_per_item: body.price_per_item,\n    order_total: body.order_total,\n    shipping_address: body.shipping_address,\n    order_date: body.order_date,\n    category: category\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -80
+      ],
+      "id": "7cd74eee-0baf-4257-bde3-089907ab1e28",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a customer service assistant for an online shop.\n\nWrite a short thank-you email body based on the order category:\n- STANDARD: warm and friendly (3 sentences)\n- BULK: friendly + mention 10% discount on next order (3-4 sentences)\n- VIP: sophisticated and personal, mention priority handling (4-5 sentences)\n\nOrder details:\n- Customer name: {{ $json.customer_name }}\n- Product: {{ $json.product }}\n- Quantity: {{ $json.quantity }}\n- Order total: ${{ $json.order_total }}\n- Order ID: {{ $json.order_id }}\n- Category: {{ $json.category }}\n\nJust write the email body. No subject line. No sign-off name.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        176,
+        -80
+      ],
+      "id": "fee63673-9835-4b61-ae3a-35caa742587a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        96
+      ],
+      "id": "3eca3b77-d79e-410c-a756-fcc88fd7b76a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "4J1qr684cMXhlTb0",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Code in JavaScript').item.json.category }}",
+                    "rightValue": "STANDARD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a9d28280-cc87-4597-8fbe-91c56cf8e2f7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Standard"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1feb81ec-1331-42ca-a07a-3c366edd988f",
+                    "leftValue": "={{ $('Code in JavaScript').item.json.category }}",
+                    "rightValue": "BULK",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bulk"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "69c043e6-d9b8-4d69-8b1c-85b8cf445117",
+                    "leftValue": "={{ $('Code in JavaScript').item.json.category }}",
+                    "rightValue": "VIP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "VIP"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        -96
+      ],
+      "id": "fa8894c6-d05f-49e1-aa04-ab56cf9098ad",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac",
+          "mode": "list",
+          "cachedResultName": "E-commerce Order Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order ID": "={{ $('Code in JavaScript').item.json.order_id }}",
+            "Customer Name": "={{ $('Code in JavaScript').item.json.customer_name }}",
+            "Email": "={{ $('Code in JavaScript').item.json.customer_email }}",
+            "Product": "={{ $('Code in JavaScript').item.json.product }}",
+            "Quantity": "={{ $('Code in JavaScript').item.json.quantity }}",
+            "Order Total": "={{ $('Code in JavaScript').item.json.order_total }}",
+            "Category": "={{ $('Code in JavaScript').item.json.category }}",
+            "Date": "={{ $('Code in JavaScript').item.json.order_date }}",
+            "Status": "New"
+          },
+          "matchingColumns": [
+            "Order ID"
+          ],
+          "schema": [
+            {
+              "id": "Order ID",
+              "displayName": "Order ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product",
+              "displayName": "Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order Total",
+              "displayName": "Order Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        -256
+      ],
+      "id": "3c526b58-dba1-4486-a214-bc0f2cc90955",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "k7oTgOHYe6zh7tpg",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac",
+          "mode": "list",
+          "cachedResultName": "E-commerce Order Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order ID": "={{ $('Code in JavaScript').item.json.order_id }}",
+            "Customer Name": "={{ $('Code in JavaScript').item.json.customer_name }}",
+            "Email": "={{ $('Code in JavaScript').item.json.customer_email }}",
+            "Product": "={{ $('Code in JavaScript').item.json.product }}",
+            "Quantity": "={{ $('Code in JavaScript').item.json.quantity }}",
+            "Order Total": "={{ $('Code in JavaScript').item.json.order_total }}",
+            "Category": "={{ $('Code in JavaScript').item.json.category }}",
+            "Date": "={{ $('Code in JavaScript').item.json.order_date }}",
+            "Status": "New"
+          },
+          "matchingColumns": [
+            "Order ID"
+          ],
+          "schema": [
+            {
+              "id": "Order ID",
+              "displayName": "Order ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product",
+              "displayName": "Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order Total",
+              "displayName": "Order Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        -80
+      ],
+      "id": "da7923a3-2902-4148-b88e-b656be39dfae",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "k7oTgOHYe6zh7tpg",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "dzakies2003@gmail.com",
+        "subject": "=New {{ $('Code in JavaScript').item.json.category }} order — {{ $('Code in JavaScript').item.json.order_id }}",
+        "message": "=<h2>New Order Received</h2>\n\n<table style=\"border-collapse: collapse; width: 100%;\">\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Order ID</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.order_id }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Customer</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.customer_name }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Email</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.customer_email }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Product</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.product }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Quantity</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.quantity }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Order Total</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">${{ $('Code in JavaScript').item.json.order_total }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Category</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.category }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Date</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.order_date }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Shipping to</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.shipping_address }}</td>\n  </tr>\n</table>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        -256
+      ],
+      "id": "e5c67b9e-b9b5-41b4-8e73-6f70978a7b43",
+      "name": "Email for owner [Standard]",
+      "webhookId": "c8f23547-18f4-4290-bdfb-497529e466c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code in JavaScript').item.json.customer_email }}",
+        "subject": "=Your order {{ $('Code in JavaScript').item.json.order_id }} is confirmed!",
+        "message": "=<p>Hi {{ $('Code in JavaScript').item.json.customer_name }},</p>  {{ $('AI Agent').item.json.output }}  <br> <p><strong>Order Summary:</strong></p> <ul>   <li>Order ID: {{ $('Code in JavaScript').item.json.order_id }}</li>   <li>Product: {{ $('Code in JavaScript').item.json.product }}</li>   <li>Quantity: {{ $('Code in JavaScript').item.json.quantity }}</li>   <li>Total: ${{ $('Code in JavaScript').item.json.order_total }}</li>   <li>Shipping to: {{ $('Code in JavaScript').item.json.shipping_address }}</li> </ul>  <p>Thank you for shopping with us!</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        -256
+      ],
+      "id": "22bf5889-1893-4462-8582-ed68eb954768",
+      "name": "Email for customer [Standard]",
+      "webhookId": "4a8f463f-eb2f-43ea-a9db-5ba3399c0245",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code in JavaScript').item.json.customer_email }}",
+        "subject": "=Your bulk order {{ $('Code in JavaScript').item.json.order_id }} is confirmed!",
+        "message": "=<p>Hi {{ $('Code in JavaScript').item.json.customer_name }},</p>  {{ $('AI Agent').item.json.output }}  <br> <p><strong>Order Summary:</strong></p> <ul>   <li>Order ID: {{ $('Code in JavaScript').item.json.order_id }}</li>   <li>Product: {{ $('Code in JavaScript').item.json.product }}</li>   <li>Quantity: {{ $('Code in JavaScript').item.json.quantity }}</li>   <li>Total: ${{ $('Code in JavaScript').item.json.order_total }}</li>   <li>Shipping to: {{ $('Code in JavaScript').item.json.shipping_address }}</li> </ul>  <p>Thank you for shopping with us!</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        -80
+      ],
+      "id": "e8ae5a6f-6b4f-4b2e-9330-c7a0a1cff862",
+      "name": "Email for customer [Bulk]",
+      "webhookId": "4a8f463f-eb2f-43ea-a9db-5ba3399c0245",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "dzakies2003@gmail.com",
+        "subject": "=New {{ $('Code in JavaScript').item.json.category }} order — {{ $('Code in JavaScript').item.json.order_id }}",
+        "message": "=<h2>New Order Received</h2>\n\n<table style=\"border-collapse: collapse; width: 100%;\">\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Order ID</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.order_id }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Customer</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.customer_name }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Email</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.customer_email }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Product</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.product }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Quantity</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.quantity }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Order Total</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">${{ $('Code in JavaScript').item.json.order_total }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Category</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.category }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Date</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.order_date }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Shipping to</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.shipping_address }}</td>\n  </tr>\n</table>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        -80
+      ],
+      "id": "32c641b0-be80-4c6f-a021-0cc96e64f89a",
+      "name": "Email for owner [Bulk]",
+      "webhookId": "c8f23547-18f4-4290-bdfb-497529e466c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac",
+          "mode": "list",
+          "cachedResultName": "E-commerce Order Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Order ID": "={{ $('Code in JavaScript').item.json.order_id }}",
+            "Customer Name": "={{ $('Code in JavaScript').item.json.customer_name }}",
+            "Email": "={{ $('Code in JavaScript').item.json.customer_email }}",
+            "Product": "={{ $('Code in JavaScript').item.json.product }}",
+            "Quantity": "={{ $('Code in JavaScript').item.json.quantity }}",
+            "Order Total": "={{ $('Code in JavaScript').item.json.order_total }}",
+            "Category": "={{ $('Code in JavaScript').item.json.category }}",
+            "Date": "={{ $('Code in JavaScript').item.json.order_date }}",
+            "Status": "New"
+          },
+          "matchingColumns": [
+            "Order ID"
+          ],
+          "schema": [
+            {
+              "id": "Order ID",
+              "displayName": "Order ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product",
+              "displayName": "Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order Total",
+              "displayName": "Order Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        80
+      ],
+      "id": "a9c970ec-7806-41f0-ab6b-83d02c1f8b02",
+      "name": "Append row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "k7oTgOHYe6zh7tpg",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code in JavaScript').item.json.customer_email }}",
+        "subject": "=Your VIP order {{ $('Code in JavaScript').item.json.order_id }} is confirmed — priority handling guaranteed!",
+        "message": "=<p>Hi {{ $('Code in JavaScript').item.json.customer_name }},</p>  {{ $('AI Agent').item.json.output }}  <br> <p><strong>Order Summary:</strong></p> <ul>   <li>Order ID: {{ $('Code in JavaScript').item.json.order_id }}</li>   <li>Product: {{ $('Code in JavaScript').item.json.product }}</li>   <li>Quantity: {{ $('Code in JavaScript').item.json.quantity }}</li>   <li>Total: ${{ $('Code in JavaScript').item.json.order_total }}</li>   <li>Shipping to: {{ $('Code in JavaScript').item.json.shipping_address }}</li> </ul>  <p>Thank you for shopping with us!</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        80
+      ],
+      "id": "14292bef-4328-40ec-a657-b3969ace0e26",
+      "name": "Email for customer [VIP]",
+      "webhookId": "4a8f463f-eb2f-43ea-a9db-5ba3399c0245",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "dzakies2003@gmail.com",
+        "subject": "=New {{ $('Code in JavaScript').item.json.category }} order — {{ $('Code in JavaScript').item.json.order_id }}",
+        "message": "=<h2>New Order Received</h2>\n\n<table style=\"border-collapse: collapse; width: 100%;\">\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Order ID</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.order_id }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Customer</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.customer_name }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Email</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.customer_email }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Product</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.product }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Quantity</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.quantity }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Order Total</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">${{ $('Code in JavaScript').item.json.order_total }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Category</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.category }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Date</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.order_date }}</td>\n  </tr>\n  <tr style=\"background-color: #f2f2f2;\">\n    <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Shipping to</strong></td>\n    <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ $('Code in JavaScript').item.json.shipping_address }}</td>\n  </tr>\n</table>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        80
+      ],
+      "id": "5378654d-3d81-41eb-b826-97aa2f1fb765",
+      "name": "Email for owner [VIP]",
+      "webhookId": "c8f23547-18f4-4290-bdfb-497529e466c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -144,
+        336
+      ],
+      "id": "45b72dbd-f447-44b8-a074-3b6ecf14ad60",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac",
+          "mode": "list",
+          "cachedResultName": "E-commerce Order Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sAkal7htx02jUbjgCqhABIwG7QyylwBzrOLZa91cvac/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        64,
+        336
+      ],
+      "id": "8df3863f-e61c-4c2e-84ad-c419d77b7b46",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "k7oTgOHYe6zh7tpg",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nconst pendingOrders = rows.filter(row => \n  row.json.Status === \"New\"\n);\n\nif (pendingOrders.length === 0) {\n  return [{ json: { hasPending: false, orders: [] } }];\n}\n\nreturn [{\n  json: {\n    hasPending: true,\n    count: pendingOrders.length,\n    orders: pendingOrders.map(row => ({\n      order_id: row.json['Order ID'],\n      customer_name: row.json['Customer Name'],\n      product: row.json['Product'],\n      quantity: row.json['Quantity'],\n      order_total: row.json['Order Total'],\n      date: row.json['Date']\n    }))\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        336
+      ],
+      "id": "2db6c0d0-5f37-4123-9eef-c24c3e2089c9",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2247776f-30ea-40df-8288-dc6f95bbed7e",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        336
+      ],
+      "id": "7771445f-4acf-474e-83c0-3d103385601d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "dzakies2003@gmail.com",
+        "subject": "=⚠️ {{ $json.count }} unprocessed orders as of 9AM",
+        "message": "=<h2>⚠️ Unprocessed Orders Reminder</h2> <p>The following orders still have a <strong>New</strong> status  and need attention:</p>  <table style=\"border-collapse: collapse; width: 100%;\">   <tr style=\"background-color: #f2f2f2;\">     <th style=\"padding: 8px; border: 1px solid #ddd;\">Order ID</th>     <th style=\"padding: 8px; border: 1px solid #ddd;\">Customer</th>     <th style=\"padding: 8px; border: 1px solid #ddd;\">Product</th>     <th style=\"padding: 8px; border: 1px solid #ddd;\">Quantity</th>     <th style=\"padding: 8px; border: 1px solid #ddd;\">Total</th>     <th style=\"padding: 8px; border: 1px solid #ddd;\">Date</th>   </tr>   {{ $json.orders.map(o => `   <tr>     <td style=\"padding: 8px; border: 1px solid #ddd;\">${o.order_id}</td>     <td style=\"padding: 8px; border: 1px solid #ddd;\">${o.customer_name}</td>     <td style=\"padding: 8px; border: 1px solid #ddd;\">${o.product}</td>     <td style=\"padding: 8px; border: 1px solid #ddd;\">${o.quantity}</td>     <td style=\"padding: 8px; border: 1px solid #ddd;\">${o.order_total}</td>     <td style=\"padding: 8px; border: 1px solid #ddd;\">${o.date}</td>   </tr>`).join('') }} </table>  <p>Please update the status of completed orders in the  <a href=\"https://docs.google.com/spreadsheets\">Order Log</a>.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        320
+      ],
+      "id": "c802d8f0-2ae6-4c91-972d-11eb446cc8a9",
+      "name": "Send a message",
+      "webhookId": "81208fd7-f3c6-42c7-99e1-35efb658ef22",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "stc3PjRnshFPX2ht",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Email for customer [Standard]",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email for customer [Bulk]",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email for customer [VIP]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Email for owner [Standard]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Email for owner [Bulk]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email for customer [Standard]": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email for customer [Bulk]": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Email for owner [VIP]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email for customer [VIP]": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "11016619-56cc-4a9c-a5f8-45132f32dbe8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "933a06c2b111f542b51e9a7b9c8e2732e01499649d8a620b94eac921169f384d"
+  },
+  "id": "yDbBMxq9bgvCt0xc",
+  "tags": []
+}
