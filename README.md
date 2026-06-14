@@ -98,8 +98,8 @@ Use [Hoppscotch](https://hoppscotch.io) or any API tester to send a POST request
 
 Change `quantity` to test different categories:
 - `50` → STANDARD (1–100 items)
-- `500` → BULK (101–500 items)
-- `1500` → VIP (501+ items)
+- `300` → BULK (101–500 items)
+- `600` → VIP (501+ items)
 
 ---
 
