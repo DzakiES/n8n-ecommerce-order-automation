@@ -11,8 +11,8 @@ When a new order is received via webhook, the workflow:
 1. **Receives the order** via a webhook trigger (works with any shop platform)
 2. **Formats and classifies** the order using a JavaScript code node:
    - 1–100 items → `STANDARD`
-   - 101–1000 items → `BULK`
-   - 1001+ items → `VIP`
+   - 101–500 items → `BULK`
+   - 501+ items → `VIP`
 3. **AI generates a personalized email** using Google Gemini based on the order category:
    - STANDARD → warm and friendly
    - BULK → friendly + 10% discount offer on next order
@@ -98,8 +98,8 @@ Use [Hoppscotch](https://hoppscotch.io) or any API tester to send a POST request
 
 Change `quantity` to test different categories:
 - `50` → STANDARD (1–100 items)
-- `500` → BULK (101–1000 items)
-- `1500` → VIP (1001+ items)
+- `500` → BULK (101–500 items)
+- `1500` → VIP (501+ items)
 
 ---
 
@@ -109,7 +109,7 @@ Classification is handled by a simple JavaScript code node — no AI needed for 
 
 ```javascript
 if (quantity <= 100) category = "STANDARD";
-else if (quantity <= 1000) category = "BULK";
+else if (quantity <= 500) category = "BULK";
 else category = "VIP";
 ```
 
